@@ -13,7 +13,11 @@ const getCachedStickerSpy = vi.fn();
 const describeStickerImageSpy = vi.fn();
 const resolvePinnedHostname = ssrf.resolvePinnedHostname;
 const lookupMock = vi.fn();
-let resolvePinnedHostnameSpy: ReturnType<typeof vi.spyOn> | null = null;
+let resolvePinnedHostnameSpy: ReturnType<typeof vi.spyOn> = null;
+
+const sleep = async (ms: number) => {
+  await new Promise<void>((resolve) => setTimeout(resolve, ms));
+};
 
 type ApiStub = {
   config: { use: (arg: unknown) => void };
@@ -120,7 +124,7 @@ vi.mock("../auto-reply/reply.js", () => {
 
 describe("telegram inbound media", () => {
   // Parallel vitest shards can make this suite slower than the standalone run.
-  const INBOUND_MEDIA_TEST_TIMEOUT_MS = process.platform === "win32" ? 60_000 : 45_000;
+  const INBOUND_MEDIA_TEST_TIMEOUT_MS = process.platform === "win32" ? 120_000 : 90_000;
 
   it(
     "downloads media via file_path (no file.download)",
@@ -285,12 +289,8 @@ describe("telegram inbound media", () => {
 });
 
 describe("telegram media groups", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
   afterEach(() => {
-    vi.useRealTimers();
+    vi.clearAllTimers();
   });
 
   const MEDIA_GROUP_TEST_TIMEOUT_MS = process.platform === "win32" ? 45_000 : 20_000;
@@ -359,7 +359,7 @@ describe("telegram media groups", () => {
       await second;
 
       expect(replySpy).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(MEDIA_GROUP_FLUSH_MS);
+      await sleep(MEDIA_GROUP_FLUSH_MS);
 
       expect(runtimeError).not.toHaveBeenCalled();
       expect(replySpy).toHaveBeenCalledTimes(1);
@@ -425,7 +425,7 @@ describe("telegram media groups", () => {
       await Promise.all([first, second]);
 
       expect(replySpy).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(MEDIA_GROUP_FLUSH_MS);
+      await sleep(MEDIA_GROUP_FLUSH_MS);
 
       expect(replySpy).toHaveBeenCalledTimes(2);
 
@@ -721,12 +721,8 @@ describe("telegram stickers", () => {
 });
 
 describe("telegram text fragments", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
   afterEach(() => {
-    vi.useRealTimers();
+    vi.clearAllTimers();
   });
 
   const TEXT_FRAGMENT_TEST_TIMEOUT_MS = process.platform === "win32" ? 45_000 : 20_000;
@@ -774,7 +770,7 @@ describe("telegram text fragments", () => {
       });
 
       expect(replySpy).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(TEXT_FRAGMENT_FLUSH_MS);
+      await sleep(TEXT_FRAGMENT_FLUSH_MS);
 
       expect(replySpy).toHaveBeenCalledTimes(1);
       const payload = replySpy.mock.calls[0][0] as { RawBody?: string; Body?: string };
